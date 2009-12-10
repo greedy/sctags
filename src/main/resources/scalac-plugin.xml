@@ -1,0 +1,4 @@
+<plugin>
+<name>tags</name>
+<classname>sctags.plugin.TagsPlugin</classname>
+</plugin>
