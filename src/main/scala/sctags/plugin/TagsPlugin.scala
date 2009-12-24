@@ -23,12 +23,26 @@ class TagsPlugin(val global: Global) extends Plugin {
 
     class MakeTagsPhase(prev: Phase) extends StdPhase(prev) {
       override def name = MakeTags.this.phaseName
+
+      abstract class WithParentsTraverser extends Traverser {
+        var parents: List[Tree] = Nil
+        override def traverse(t: Tree) {
+          traverse(t, parents)
+          parents = t :: parents
+          super.traverse(t)
+          parents = parents.tail
+        }
+
+        def traverse(t: Tree, parents: List[Tree])
+      }
       def apply(unit: CompilationUnit) {
         val tags = new mutable.ListBuffer[Tag]
 
-        unit.body.foreach { tree =>
-          tags += extractors.sequence(extractors.all)(tree, Tag.empty.file = unit.source.path)
-        }
+        new WithParentsTraverser {
+          def traverse(t: Tree, parents: List[Tree]) {
+            tags += extractors.sequence(extractors.all)(t, parents, Tag.empty.file(unit.source.path))
+          }
+        }.traverse(unit.body)
 
         Console.println(tags.filter(_.isValid).mkString("\n"))
       }
